@@ -1,1 +1,88 @@
-test
+# Security Rules Configuration
+rules:
+  aws:
+    encryption:
+      - rule_id: aws_s3_encryption
+        enabled: true
+        severity: high
+      - rule_id: aws_ebs_encryption
+        enabled: true
+        severity: high
+      - rule_id: aws_rds_encryption
+        enabled: true
+        severity: high
+    
+    access_control:
+      - rule_id: aws_s3_public_bucket
+        enabled: true
+        severity: critical
+      - rule_id: aws_iam_wildcard_policy
+        enabled: true
+        severity: medium
+    
+    network:
+      - rule_id: aws_security_group_open
+        enabled: true
+        severity: critical
+      - rule_id: aws_rds_public_access
+        enabled: true
+        severity: high
+
+  azure:
+    storage:
+      - rule_id: azure_storage_public
+        enabled: true
+        severity: high
+      - rule_id: azure_storage_encryption
+        enabled: true
+        severity: medium
+    
+    network:
+      - rule_id: azure_nsg_open
+        enabled: true
+        severity: critical
+    
+    compute:
+      - rule_id: azure_vm_no_encryption
+        enabled: true
+        severity: medium
+    
+    database:
+      - rule_id: azure_sql_public
+        enabled: true
+        severity: high
+
+  gcp:
+    compute:
+      - rule_id: gcp_compute_public_ip
+        enabled: true
+        severity: medium
+      - rule_id: gcp_compute_no_encryption
+        enabled: true
+        severity: medium
+    
+    network:
+      - rule_id: gcp_firewall_open
+        enabled: true
+        severity: critical
+    
+    storage:
+      - rule_id: gcp_storage_public
+        enabled: true
+        severity: high
+    
+    database:
+      - rule_id: gcp_sql_public_ip
+        enabled: true
+        severity: high
+
+# Custom rule definitions
+custom_rules:
+  - name: "Custom S3 Bucket Naming"
+    id: custom_s3_naming
+    category: naming
+    severity: low
+    description: "S3 bucket names should follow organizational naming convention"
+    pattern: "^org-[a-z0-9-]+$"
+    applies_to:
+      - aws_s3_bucket
