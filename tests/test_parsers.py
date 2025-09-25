@@ -2,87 +2,80 @@
 Tests for configuration parsers
 """
 
-import pytest
-import tempfile
 import json
+import tempfile
 from pathlib import Path
 
-from src.parsers.terraform import TerraformParser
-from src.parsers.cloudformation import CloudFormationParser
+import pytest
 from src.parsers.arm import ARMParser
+from src.parsers.cloudformation import CloudFormationParser
+from src.parsers.terraform import TerraformParser
 
 
 class TestTerraformParser:
     @pytest.fixture
     def parser(self):
         return TerraformParser()
-    
+
     def test_parse_hcl_format(self, parser):
         """Test parsing HCL format Terraform"""
-        hcl_content = '''
+        hcl_content = """
         resource "aws_s3_bucket" "example" {
           bucket = "my-test-bucket"
           acl    = "private"
         }
-        '''
-        
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.tf', delete=False) as f:
+        """
+
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".tf", delete=False) as f:
             f.write(hcl_content)
             temp_path = Path(f.name)
-        
+
         try:
             result = parser.parse(temp_path)
-            assert 'resource' in result
-            assert 'aws_s3_bucket' in result['resource']
+            assert "resource" in result
+            assert "aws_s3_bucket" in result["resource"]
         finally:
             temp_path.unlink()
-    
+
     def test_parse_json_format(self, parser):
         """Test parsing JSON format Terraform"""
         json_content = {
             "resource": {
                 "aws_s3_bucket": {
-                    "example": {
-                        "bucket": "my-test-bucket",
-                        "acl": "private"
-                    }
+                    "example": {"bucket": "my-test-bucket", "acl": "private"}
                 }
             }
         }
-        
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.tf.json', delete=False) as f:
+
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".tf.json", delete=False
+        ) as f:
             json.dump(json_content, f)
             temp_path = Path(f.name)
-        
+
         try:
             result = parser.parse(temp_path)
             assert result == json_content
         finally:
             temp_path.unlink()
-    
+
     def test_get_resources(self, parser):
         """Test extracting resources from parsed content"""
         content = {
-            'resource': {
-                'aws_s3_bucket': {
-                    'test': {'bucket': 'test-bucket'}
-                }
-            },
-            'variable': {
-                'name': {'type': 'string'}
-            }
+            "resource": {"aws_s3_bucket": {"test": {"bucket": "test-bucket"}}},
+            "variable": {"name": {"type": "string"}},
         }
-        
+
         resources = parser.get_resources(content)
-        assert 'aws_s3_bucket' in resources
-        assert 'test' in resources['aws_s3_bucket']
+        assert "aws_s3_bucket" in resources
+        assert "test" in resources["aws_s3_bucket"]
 
 
 class TestCloudFormationParser:
     @pytest.fixture
     def parser(self):
         return CloudFormationParser()
-    
+
     def test_parse_json_cloudformation(self, parser):
         """Test parsing JSON CloudFormation template"""
         template = {
@@ -90,42 +83,40 @@ class TestCloudFormationParser:
             "Resources": {
                 "MyBucket": {
                     "Type": "AWS::S3::Bucket",
-                    "Properties": {
-                        "BucketName": "my-test-bucket"
-                    }
+                    "Properties": {"BucketName": "my-test-bucket"},
                 }
-            }
+            },
         }
-        
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
             json.dump(template, f)
             temp_path = Path(f.name)
-        
+
         try:
             result = parser.parse(temp_path)
             assert result == template
         finally:
             temp_path.unlink()
-    
+
     def test_parse_yaml_cloudformation(self, parser):
         """Test parsing YAML CloudFormation template"""
-        yaml_content = '''
+        yaml_content = """
         AWSTemplateFormatVersion: '2010-09-09'
         Resources:
           MyBucket:
             Type: AWS::S3::Bucket
             Properties:
               BucketName: my-test-bucket
-        '''
-        
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.yaml', delete=False) as f:
+        """
+
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
             f.write(yaml_content)
             temp_path = Path(f.name)
-        
+
         try:
             result = parser.parse(temp_path)
-            assert 'Resources' in result
-            assert 'MyBucket' in result['Resources']
+            assert "Resources" in result
+            assert "MyBucket" in result["Resources"]
         finally:
             temp_path.unlink()
 
@@ -134,7 +125,7 @@ class TestARMParser:
     @pytest.fixture
     def parser(self):
         return ARMParser()
-    
+
     def test_parse_arm_template(self, parser):
         """Test parsing ARM template"""
         template = {
@@ -145,17 +136,15 @@ class TestARMParser:
                     "type": "Microsoft.Storage/storageAccounts",
                     "apiVersion": "2021-04-01",
                     "name": "mystorageaccount",
-                    "properties": {
-                        "allowBlobPublicAccess": True
-                    }
+                    "properties": {"allowBlobPublicAccess": True},
                 }
-            ]
+            ],
         }
-        
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
             json.dump(template, f)
             temp_path = Path(f.name)
-        
+
         try:
             result = parser.parse(temp_path)
             assert result == template
