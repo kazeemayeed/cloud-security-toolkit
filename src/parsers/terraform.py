@@ -2,10 +2,14 @@
 Terraform configuration parser
 """
 
-import hcl2
 import json
 from pathlib import Path
 from typing import Dict, Any
+
+try:
+    import hcl2
+except ImportError:
+    hcl2 = None
 
 
 class TerraformParser:
@@ -19,6 +23,9 @@ class TerraformParser:
                 return json.loads(content)
             else:
                 # Parse HCL format Terraform
+                if hcl2 is None:
+                    raise ImportError("python-hcl2 package is required for HCL parsing. Install with: pip install python-hcl2")
+                
                 return hcl2.loads(content)
                 
         except Exception as e:
