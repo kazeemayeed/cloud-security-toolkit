@@ -1,1 +1,54 @@
-test
+# Global Settings
+analysis:
+  severity_threshold: medium
+  output_format: json
+  auto_remediate: false
+  max_file_size_mb: 10
+  exclude_patterns:
+    - "*.backup*"
+    - "*.tmp"
+    - ".terraform/"
+    - "node_modules/"
+
+# Cloud provider settings
+cloud_providers:
+  aws:
+    enabled: true
+    regions: ["us-east-1", "us-west-2", "eu-west-1"]
+  
+  azure:
+    enabled: true
+    locations: ["East US", "West Europe", "Southeast Asia"]
+  
+  gcp:
+    enabled: true
+    regions: ["us-central1", "europe-west1", "asia-east1"]
+
+# Reporting settings
+reporting:
+  formats: ["json", "html", "sarif"]
+  include_fix_suggestions: true
+  include_references: true
+  group_by_severity: true
+
+# Remediation settings
+remediation:
+  create_backup: true
+  backup_suffix: ".backup"
+  dry_run: false
+  confirm_fixes: true
+
+# Integration settings
+integrations:
+  github:
+    enabled: false
+    token_env_var: "GITHUB_TOKEN"
+  
+  slack:
+    enabled: false
+    webhook_env_var: "SLACK_WEBHOOK"
+  
+  jira:
+    enabled: false
+    url_env_var: "JIRA_URL"
+    token_env_var: "JIRA_TOKEN"
