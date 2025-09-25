@@ -1,0 +1,80 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "storageAccountName": {
+            "type": "string",
+            "defaultValue": "insecurestorage123"
+        }
+    },
+    "resources": [
+        {
+            "type": "Microsoft.Storage/storageAccounts",
+            "apiVersion": "2021-04-01",
+            "name": "[parameters('storageAccountName')]",
+            "location": "[resourceGroup().location]",
+            "sku": {
+                "name": "Standard_LRS"
+            },
+            "kind": "StorageV2",
+            "properties": {
+                "allowBlobPublicAccess": true,
+                "supportsHttpsTrafficOnly": false,
+                "encryption": {
+                    "services": {
+                        "blob": {
+                            "enabled": false
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "type": "Microsoft.Network/networkSecurityGroups",
+            "apiVersion": "2021-02-01",
+            "name": "insecure-nsg",
+            "location": "[resourceGroup().location]",
+            "properties": {
+                "securityRules": [
+                    {
+                        "name": "allow-rdp-from-anywhere",
+                        "properties": {
+                            "protocol": "Tcp",
+                            "sourcePortRange": "*",
+                            "destinationPortRange": "3389",
+                            "sourceAddressPrefix": "*",
+                            "destinationAddressPrefix": "*",
+                            "access": "Allow",
+                            "priority": 1000,
+                            "direction": "Inbound"
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "type": "Microsoft.Sql/servers",
+            "apiVersion": "2021-02-01-preview",
+            "name": "insecure-sql-server",
+            "location": "[resourceGroup().location]",
+            "properties": {
+                "administratorLogin": "sqladmin",
+                "administratorLoginPassword": "Password123!"
+            },
+            "resources": [
+                {
+                    "type": "firewallRules",
+                    "apiVersion": "2021-02-01-preview",
+                    "name": "AllowAllAzureIps",
+                    "dependsOn": [
+                        "[resourceId('Microsoft.Sql/servers', 'insecure-sql-server')]"
+                    ],
+                    "properties": {
+                        "startIpAddress": "0.0.0.0",
+                        "endIpAddress": "0.0.0.0"
+                    }
+                }
+            ]
+        }
+    ]
+}

@@ -1,0 +1,56 @@
+# Insecure CloudFormation template for testing
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Insecure CloudFormation template with security issues'
+
+Resources:
+  # Insecure S3 bucket
+  InsecureBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: insecure-cf-bucket
+      AccessControl: PublicRead  # SECURITY ISSUE: Public access
+      VersioningConfiguration:
+        Status: Suspended        # SECURITY ISSUE: No versioning
+
+  # Security group open to the world
+  InsecureSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Insecure security group
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0      # SECURITY ISSUE: SSH open to world
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0      # SECURITY ISSUE: HTTP open to world
+
+  # RDS with public access
+  InsecureRDSInstance:
+    Type: AWS::RDS::DBInstance
+    Properties:
+      DBInstanceIdentifier: insecure-rds
+      DBInstanceClass: db.t3.micro
+      Engine: mysql
+      MasterUsername: admin
+      MasterUserPassword: hardcodedpassword123  # SECURITY ISSUE: Hardcoded password
+      AllocatedStorage: '20'
+      PubliclyAccessible: true                  # SECURITY ISSUE: Public access
+      StorageEncrypted: false                   # SECURITY ISSUE: No encryption
+
+  # IAM role with admin privileges
+  InsecureIAMRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: InsecureRole
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ec2.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AdministratorAccess  # SECURITY ISSUE: Full admin access
