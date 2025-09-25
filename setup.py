@@ -1,5 +1,3 @@
-### setup.py
-```python
 from setuptools import setup, find_packages
 
 with open("README.md", "r", encoding="utf-8") as fh:
@@ -34,7 +32,7 @@ setup(
         "azure-identity>=1.12.0",
         "azure-mgmt-resource>=22.0.0",
         "google-cloud-resource-manager>=1.7.0",
-        "hcl2>=0.3.0",
+        "python-hcl2>=4.3.0",
         "jinja2>=3.1.0",
         "click>=8.1.0",
         "colorama>=0.4.6",
