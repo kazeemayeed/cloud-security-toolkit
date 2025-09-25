@@ -79,84 +79,112 @@ class SecurityAnalyzer:
                 results['summary']['total_issues'] += 1
                 results['summary'][severity] = results['summary'].get(severity, 0) + 1
         
-        return violations
+        return results
     
-    def _check_security_group_open(self, content: Dict[str, Any]) -> List[Dict[str, Any]]:
-        """Check for security groups open to the world"""
-        violations = []
+    def _analyze_file(self, file_path: Path, parser, cloud_provider: str, 
+                     min_severity: str) -> List[Dict[str, Any]]:
+        """Analyze a single file"""
+        findings = []
         
-        if 'resource' in content:
-            for resource_type, resources in content['resource'].items():
-                if resource_type == 'aws_security_group':
-                    for resource_name, resource_config in resources.items():
-                        ingress_rules = resource_config.get('ingress', [])
-                        if not isinstance(ingress_rules, list):
-                            ingress_rules = [ingress_rules]
-                        
-                        for rule in ingress_rules:
-                            cidr_blocks = rule.get('cidr_blocks', [])
-                            if '0.0.0.0/0' in cidr_blocks:
-                                violations.append({
-                                    'message': f'Security group {resource_name} allows inbound traffic from anywhere',
-                                    'resource': f'{resource_type}.{resource_name}',
-                                    'line': resource_config.get('__line__', 1)
-                                })
-        
-        return violations
-    
-    def _check_rds_public_access(self, content: Dict[str, Any]) -> List[Dict[str, Any]]:
-        """Check for RDS instances with public access"""
-        violations = []
-        
-        if 'resource' in content:
-            for resource_type, resources in content['resource'].items():
-                if resource_type == 'aws_db_instance':
-                    for resource_name, resource_config in resources.items():
-                        publicly_accessible = resource_config.get('publicly_accessible', False)
-                        if publicly_accessible:
-                            violations.append({
-                                'message': f'RDS instance {resource_name} is publicly accessible',
-                                'resource': f'{resource_type}.{resource_name}',
-                                'line': resource_config.get('__line__', 1)
-                            })
-        
-        return violations
-    
-    def _check_iam_wildcard_policy(self, content: Dict[str, Any]) -> List[Dict[str, Any]]:
-        """Check for IAM policies with wildcard actions"""
-        violations = []
-        
-        if 'resource' in content:
-            for resource_type, resources in content['resource'].items():
-                if resource_type in ['aws_iam_policy', 'aws_iam_role_policy']:
-                    for resource_name, resource_config in resources.items():
-                        policy = resource_config.get('policy', '')
-                        if isinstance(policy, str) and '"*"' in policy:
-                            violations.append({
-                                'message': f'IAM policy {resource_name} contains wildcard actions',
-                                'resource': f'{resource_type}.{resource_name}',
-                                'line': resource_config.get('__line__', 1)
-                            })
-        
-        return violations
-    
-    def _is_s3_bucket_public(self, config: Dict[str, Any]) -> bool:
-        """Check if S3 bucket configuration allows public access"""
-        # Check various ways a bucket can be made public
-        acl = config.get('acl', '')
-        if acl in ['public-read', 'public-read-write']:
-            return True
-        
-        # Check for public access block settings
-        public_access_block = config.get('public_access_block', {})
-        if public_access_block:
-            block_public_acls = public_access_block.get('block_public_acls', True)
-            block_public_policy = public_access_block.get('block_public_policy', True)
-            ignore_public_acls = public_access_block.get('ignore_public_acls', True)
-            restrict_public_buckets = public_access_block.get('restrict_public_buckets', True)
+        try:
+            # Parse the file
+            parsed_content = parser.parse(file_path)
             
-            if not (block_public_acls and block_public_policy and 
-                   ignore_public_acls and restrict_public_buckets):
-                return True
+            # Get applicable rules based on cloud provider
+            applicable_rules = self._get_applicable_rules(cloud_provider, parsed_content)
+            
+            # Run rules against parsed content
+            for rule in applicable_rules:
+                rule_findings = self.rule_engine.evaluate_rule(rule, parsed_content, file_path)
+                
+                # Filter by severity
+                filtered_findings = [
+                    f for f in rule_findings 
+                    if self._severity_meets_threshold(f.get('severity'), min_severity)
+                ]
+                
+                findings.extend(filtered_findings)
+                
+        except Exception as e:
+            findings.append({
+                'file': str(file_path),
+                'rule': 'parse_error',
+                'severity': 'high',
+                'message': f"Failed to parse file: {str(e)}",
+                'line': 1,
+                'column': 1
+            })
         
-        return False
+        return findings
+    
+    def _get_files(self, path: Path, format: str) -> List[Path]:
+        """Get all files of specified format from path"""
+        extensions = {
+            'terraform': ['.tf', '.tfvars'],
+            'cloudformation': ['.yaml', '.yml', '.json'],
+            'arm': ['.json']
+        }
+        
+        target_extensions = extensions.get(format, [])
+        files = []
+        
+        if path.is_file():
+            if path.suffix in target_extensions:
+                files.append(path)
+        else:
+            for ext in target_extensions:
+                files.extend(path.rglob(f"*{ext}"))
+        
+        return files
+    
+    def _get_applicable_rules(self, cloud_provider: str, parsed_content: Dict) -> List:
+        """Get rules applicable to the cloud provider and content"""
+        rules = []
+        
+        if cloud_provider == 'all':
+            for rule_set in self.rule_sets.values():
+                rules.extend(rule_set.get_rules(parsed_content))
+        else:
+            rule_set = self.rule_sets.get(cloud_provider)
+            if rule_set:
+                rules.extend(rule_set.get_rules(parsed_content))
+        
+        return rules
+    
+    def _severity_meets_threshold(self, severity: str, threshold: str) -> bool:
+        """Check if severity meets minimum threshold"""
+        severity_levels = {'low': 1, 'medium': 2, 'high': 3, 'critical': 4}
+        return severity_levels.get(severity, 0) >= severity_levels.get(threshold, 2)
+    
+    def remediate_path(self, path: Path, format: str, apply_fixes: bool = False, 
+                      create_backup: bool = True) -> Dict[str, Any]:
+        """Remediate issues in a path"""
+        # First, analyze to find issues
+        analysis_results = self.analyze_path(path, format)
+        
+        remediation_results = {
+            'total_issues': len(analysis_results['findings']),
+            'auto_fixable': 0,
+            'fixed': 0,
+            'manual_review': 0,
+            'fixes_applied': []
+        }
+        
+        for finding in analysis_results['findings']:
+            if self.remediation_engine.can_auto_fix(finding):
+                remediation_results['auto_fixable'] += 1
+                
+                if apply_fixes:
+                    try:
+                        fix_result = self.remediation_engine.apply_fix(
+                            finding, create_backup
+                        )
+                        if fix_result['success']:
+                            remediation_results['fixed'] += 1
+                            remediation_results['fixes_applied'].append(fix_result)
+                    except Exception as e:
+                        finding['fix_error'] = str(e)
+            else:
+                remediation_results['manual_review'] += 1
+        
+        return remediation_results
