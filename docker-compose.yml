@@ -1,1 +1,26 @@
-test
+version: '3.8'
+
+services:
+  cloud-security-toolkit:
+    build: .
+    volumes:
+      - ./infrastructure:/workspace
+      - ./reports:/app/reports
+    environment:
+      - PYTHONUNBUFFERED=1
+    command: analyze --path /workspace --format terraform --output /app/reports/report.json
+
+  # Development service with mounted source code
+  dev:
+    build: .
+    volumes:
+      - ./src:/app/src
+      - ./config:/app/config
+      - ./infrastructure:/workspace
+      - ./reports:/app/reports
+    environment:
+      - PYTHONUNBUFFERED=1
+      - DEVELOPMENT=1
+    command: /bin/bash
+    stdin_open: true
+    tty: true
