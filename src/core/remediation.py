@@ -3,9 +3,9 @@ Auto-remediation engine
 """
 
 import shutil
-from pathlib import Path
-from typing import Dict, Any, Optional
 from datetime import datetime
+from pathlib import Path
+from typing import Any, Dict, Optional
 
 
 class RemediationEngine:
@@ -57,7 +57,12 @@ class RemediationEngine:
             }
 
         except Exception as e:
-            return {"success": False, "rule_id": rule_id, "file": str(file_path), "error": str(e)}
+            return {
+                "success": False,
+                "rule_id": rule_id,
+                "file": str(file_path),
+                "error": str(e),
+            }
 
     def _create_backup(self, file_path: Path) -> Path:
         """Create a backup of the file"""
@@ -110,7 +115,9 @@ class RemediationEngine:
 
         return "No changes needed"
 
-    def _fix_azure_storage_public(self, finding: Dict[str, Any], file_path: Path) -> str:
+    def _fix_azure_storage_public(
+        self, finding: Dict[str, Any], file_path: Path
+    ) -> str:
         """Fix Azure storage public access"""
         content = file_path.read_text()
 
@@ -130,7 +137,9 @@ class RemediationEngine:
 
         return "No changes needed"
 
-    def _fix_gcp_compute_public_ip(self, finding: Dict[str, Any], file_path: Path) -> str:
+    def _fix_gcp_compute_public_ip(
+        self, finding: Dict[str, Any], file_path: Path
+    ) -> str:
         """Fix GCP compute instance public IP"""
         content = file_path.read_text()
 
@@ -144,7 +153,9 @@ class RemediationEngine:
             for line in lines:
                 if "access_config" in line and "{" in line:
                     skip_block = True
-                    fixed_lines.append("  # " + line + " # Removed public IP for security")
+                    fixed_lines.append(
+                        "  # " + line + " # Removed public IP for security"
+                    )
                     continue
 
                 if skip_block and "}" in line:
