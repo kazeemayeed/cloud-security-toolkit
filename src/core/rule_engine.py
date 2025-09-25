@@ -1,5 +1,3 @@
-### src/core/rule_engine.py
-```python
 """
 Rule engine for evaluating security rules
 """
