@@ -1,4 +1,4 @@
-name: Build and Publish Docker Image
+name: Publish Docker image to Docker Hub
 
 on:
   push:
@@ -6,14 +6,14 @@ on:
       - 'v*'   # triggers on tags like v1.0.0
 
 jobs:
-  build-and-push:
+  docker-publish:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up QEMU (for cross-platform builds)
+      - name: Set up QEMU (multi-platform support)
         uses: docker/setup-qemu-action@v2
 
       - name: Set up Docker Buildx
