@@ -35,12 +35,14 @@ class TestTerraformParser:
             # The HCL parser returns a dict with 'resource' key containing a list
             assert isinstance(result, dict), f"Expected dict, got {type(result)}"
             assert "resource" in result, f"Expected 'resource' key in {result.keys()}"
-            
+
             # The resource value is a list containing dictionaries
             resource_list = result["resource"]
-            assert isinstance(resource_list, list), f"Expected list for resource, got {type(resource_list)}"
+            assert isinstance(
+                resource_list, list
+            ), f"Expected list for resource, got {type(resource_list)}"
             assert len(resource_list) > 0, "Expected non-empty resource list"
-            
+
             # Get the first dictionary from the resource list
             resource_dict = resource_list[0]
             assert isinstance(
