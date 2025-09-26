@@ -1,25 +1,19 @@
-name: Publish Docker image to Docker Hub
+name: Build and Publish Docker Image
 
 on:
   push:
     tags:
-      - 'v*'    # triggers on tags like v1.0.0
-
-permissions:
-  contents: read
+      - 'v*'   # triggers on tags like v1.0.0
 
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
-    env:
-      IMAGE: ${{ secrets.DOCKERHUB_USERNAME }}/cloud-security-toolkit
-    steps:
-      - name: Checkout repo
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
-      - name: Set up QEMU
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU (for cross-platform builds)
         uses: docker/setup-qemu-action@v2
 
       - name: Set up Docker Buildx
@@ -37,8 +31,6 @@ jobs:
           context: .
           file: ./Dockerfile
           push: true
-          # optional: build multi-arch. Uncomment platforms line if you want it
-          # platforms: linux/amd64,linux/arm64
           tags: |
-            ${{ env.IMAGE }}:${{ github.ref_name }}
-            ${{ env.IMAGE }}:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/cloud-security-toolkit:${{ github.ref_name }}
+            ${{ secrets.DOCKERHUB_USERNAME }}/cloud-security-toolkit:latest
