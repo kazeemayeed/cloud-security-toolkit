@@ -32,15 +32,20 @@ class TestTerraformParser:
 
         try:
             result = parser.parse(temp_path)
-            # The HCL parser returns a list containing a dictionary
-            assert isinstance(result, list), f"Expected list, got {type(result)}"
-            assert len(result) > 0, "Expected non-empty list"
-
-            # Get the first dictionary from the list
-            resource_dict = result[0]
+            # The HCL parser returns a dict with 'resource' key containing a list
+            assert isinstance(result, dict), f"Expected dict, got {type(result)}"
+            assert "resource" in result, f"Expected 'resource' key in {result.keys()}"
+            
+            # The resource value is a list containing dictionaries
+            resource_list = result["resource"]
+            assert isinstance(resource_list, list), f"Expected list for resource, got {type(resource_list)}"
+            assert len(resource_list) > 0, "Expected non-empty resource list"
+            
+            # Get the first dictionary from the resource list
+            resource_dict = resource_list[0]
             assert isinstance(
                 resource_dict, dict
-            ), f"Expected dict in list, got {type(resource_dict)}"
+            ), f"Expected dict in resource list, got {type(resource_dict)}"
             assert (
                 "aws_s3_bucket" in resource_dict
             ), f"Expected 'aws_s3_bucket' in {resource_dict.keys()}"
