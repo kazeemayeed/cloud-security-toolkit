@@ -60,7 +60,10 @@ class TestAzureRules:
         content = {
             "resource": {
                 "azurerm_storage_account": {
-                    "public_storage": {"allow_blob_public_access": True, "__line__": 3}
+                    "public_storage": {
+                        "allow_blob_public_access": True,
+                        "__line__": 3,
+                    }
                 }
             }
         }
