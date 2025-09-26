@@ -3,18 +3,17 @@ name: Docker Image CI & Publish
 on:
   push:
     branches:
-      - main        # CI builds
+      - main
     tags:
-      - 'v*'        # versioned releases like v1.0.2
-  workflow_dispatch: # optional manual trigger
+      - 'v*'
+  workflow_dispatch:
 
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
@@ -30,11 +29,10 @@ jobs:
         run: |
           IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/cloud-security-toolkit
           if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
-            # Use version tag and latest
             echo "TAGS=${IMAGE}:${GITHUB_REF_NAME},${IMAGE}:latest" >> $GITHUB_ENV
           else
-            # Use main branch only
             echo "TAGS=${IMAGE}:latest" >> $GITHUB_ENV
+          fi
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v4
