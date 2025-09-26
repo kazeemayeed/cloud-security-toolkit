@@ -1,6 +1,4 @@
-## **Makefile** (update with conditional publishing)
-```makefile
-.PHONY: help install test lint format clean build docker-build docker-run publish-test-check
+.PHONY: help install test lint format clean build docker-build docker-run publish-test-check release
 
 help: ## Show this help message
 	@echo 'Usage: make [target]'
@@ -54,6 +52,24 @@ publish-test-check: check-package ## Check if we can publish to test PyPI
 		echo "✅ TEST_PYPI_API_TOKEN is set. Ready for upload."; \
 		TWINE_USERNAME=__token__ TWINE_PASSWORD=$$TEST_PYPI_API_TOKEN twine upload --repository testpypi dist/* --verbose; \
 	fi
+
+publish: check-package ## Publish to PyPI (production)
+	@if [ -z "$$PYPI_API_TOKEN" ]; then \
+		echo "❌ PYPI_API_TOKEN not set. Cannot publish to PyPI."; \
+		exit 1; \
+	else \
+		echo "✅ Publishing to PyPI..."; \
+		TWINE_USERNAME=__token__ TWINE_PASSWORD=$$PYPI_API_TOKEN twine upload dist/* --verbose; \
+	fi
+
+release: ## Create a new release (requires VERSION environment variable)
+	@if [ -z "$$VERSION" ]; then \
+		echo "❌ VERSION not set. Usage: make release VERSION=1.0.1"; \
+		exit 1; \
+	fi
+	@echo "Creating release $$VERSION..."
+	git tag -a v$$VERSION -m "Release v$$VERSION"
+	git push origin v$$VERSION
 
 docker-build: ## Build Docker image
 	docker build -t cloud-security-toolkit:latest .
