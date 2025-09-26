@@ -2,14 +2,14 @@
 Tests for configuration parsers
 """
 
-import pytest
-import tempfile
 import json
+import tempfile
 from pathlib import Path
 
-from src.parsers.terraform import TerraformParser
-from src.parsers.cloudformation import CloudFormationParser
+import pytest
 from src.parsers.arm import ARMParser
+from src.parsers.cloudformation import CloudFormationParser
+from src.parsers.terraform import TerraformParser
 
 
 class TestTerraformParser:
@@ -19,12 +19,12 @@ class TestTerraformParser:
 
     def test_parse_hcl_format(self, parser):
         """Test parsing HCL format Terraform"""
-        hcl_content = '''
+        hcl_content = """
         resource "aws_s3_bucket" "example" {
           bucket = "my-test-bucket"
           acl    = "private"
         }
-        '''
+        """
 
         with tempfile.NamedTemporaryFile(mode="w", suffix=".tf", delete=False) as f:
             f.write(hcl_content)
@@ -62,9 +62,7 @@ class TestTerraformParser:
     def test_get_resources(self, parser):
         """Test extracting resources from parsed content"""
         content = {
-            "resource": {
-                "aws_s3_bucket": {"test": {"bucket": "test-bucket"}}
-            },
+            "resource": {"aws_s3_bucket": {"test": {"bucket": "test-bucket"}}},
             "variable": {"name": {"type": "string"}},
         }
 
