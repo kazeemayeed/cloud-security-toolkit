@@ -2,8 +2,8 @@
 AWS Security Rules
 """
 
-from typing import Dict, List, Any
 import re
+from typing import Any, Dict, List
 
 
 class AWSRules:
@@ -95,7 +95,9 @@ class AWSRules:
 
         return violations
 
-    def _check_security_group_open(self, content: Dict[str, Any]) -> List[Dict[str, Any]]:
+    def _check_security_group_open(
+        self, content: Dict[str, Any]
+    ) -> List[Dict[str, Any]]:
         """Check for security groups open to the world"""
         violations = []
 
@@ -128,7 +130,9 @@ class AWSRules:
             for resource_type, resources in content["resource"].items():
                 if resource_type == "aws_db_instance":
                     for resource_name, resource_config in resources.items():
-                        publicly_accessible = resource_config.get("publicly_accessible", False)
+                        publicly_accessible = resource_config.get(
+                            "publicly_accessible", False
+                        )
                         if publicly_accessible:
                             violations.append(
                                 {
@@ -140,7 +144,9 @@ class AWSRules:
 
         return violations
 
-    def _check_iam_wildcard_policy(self, content: Dict[str, Any]) -> List[Dict[str, Any]]:
+    def _check_iam_wildcard_policy(
+        self, content: Dict[str, Any]
+    ) -> List[Dict[str, Any]]:
         """Check for IAM policies with wildcard actions"""
         violations = []
 
@@ -168,8 +174,7 @@ class AWSRules:
             return True
 
         # Check for public access block settings
-        public_access_block = config.get("public_access_block", {})
-        if public_access_block:
+        if public_access_block := config.get("public_access_block", {}):
             block_public_acls = public_access_block.get("block_public_acls", True)
             block_public_policy = public_access_block.get("block_public_policy", True)
             ignore_public_acls = public_access_block.get("ignore_public_acls", True)
