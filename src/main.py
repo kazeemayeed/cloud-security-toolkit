@@ -10,9 +10,9 @@ import json
 from pathlib import Path
 from typing import Optional
 
-from .core.analyzer import SecurityAnalyzer
-from .utils.logger import setup_logger
-from .utils.helpers import load_config, save_report
+from core.analyzer import SecurityAnalyzer
+from utils.logger import setup_logger
+from utils.helpers import load_config, save_report
 
 
 @click.group()
