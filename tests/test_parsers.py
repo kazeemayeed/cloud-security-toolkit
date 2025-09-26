@@ -35,12 +35,16 @@ class TestTerraformParser:
             # The HCL parser returns a list containing a dictionary
             assert isinstance(result, list), f"Expected list, got {type(result)}"
             assert len(result) > 0, "Expected non-empty list"
-            
+
             # Get the first dictionary from the list
             resource_dict = result[0]
-            assert isinstance(resource_dict, dict), f"Expected dict in list, got {type(resource_dict)}"
-            assert "aws_s3_bucket" in resource_dict, f"Expected 'aws_s3_bucket' in {resource_dict.keys()}"
-            
+            assert isinstance(
+                resource_dict, dict
+            ), f"Expected dict in list, got {type(resource_dict)}"
+            assert (
+                "aws_s3_bucket" in resource_dict
+            ), f"Expected 'aws_s3_bucket' in {resource_dict.keys()}"
+
         finally:
             temp_path.unlink()
 
@@ -69,9 +73,7 @@ class TestTerraformParser:
     def test_get_resources(self, parser):
         """Test extracting resources from parsed content"""
         content = {
-            "resource": {
-                "aws_s3_bucket": {"test": {"bucket": "test-bucket"}}
-            },
+            "resource": {"aws_s3_bucket": {"test": {"bucket": "test-bucket"}}},
             "variable": {"name": {"type": "string"}},
         }
 
