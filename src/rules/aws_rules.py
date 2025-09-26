@@ -2,8 +2,8 @@
 AWS Security Rules
 """
 
+from typing import Dict, List, Any
 import re
-from typing import Any, Dict, List
 
 
 class AWSRules:
@@ -93,4 +93,96 @@ class AWSRules:
                                 }
                             )
 
-        return
+        return violations
+
+    def _check_security_group_open(self, content: Dict[str, Any]) -> List[Dict[str, Any]]:
+        """Check for security groups open to the world"""
+        violations = []
+
+        if "resource" in content:
+            for resource_type, resources in content["resource"].items():
+                if resource_type == "aws_security_group":
+                    for resource_name, resource_config in resources.items():
+                        ingress_rules = resource_config.get("ingress", [])
+                        if not isinstance(ingress_rules, list):
+                            ingress_rules = [ingress_rules]
+
+                        for rule in ingress_rules:
+                            cidr_blocks = rule.get("cidr_blocks", [])
+                            if "0.0.0.0/0" in cidr_blocks:
+                                violations.append(
+                                    {
+                                        "message": f"Security group {resource_name} allows inbound traffic from anywhere",
+                                        "resource": f"{resource_type}.{resource_name}",
+                                        "line": resource_config.get("__line__", 1),
+                                    }
+                                )
+
+        return violations
+
+    def _check_rds_public_access(self, content: Dict[str, Any]) -> List[Dict[str, Any]]:
+        """Check for RDS instances with public access"""
+        violations = []
+
+        if "resource" in content:
+            for resource_type, resources in content["resource"].items():
+                if resource_type == "aws_db_instance":
+                    for resource_name, resource_config in resources.items():
+                        publicly_accessible = resource_config.get("publicly_accessible", False)
+                        if publicly_accessible:
+                            violations.append(
+                                {
+                                    "message": f"RDS instance {resource_name} is publicly accessible",
+                                    "resource": f"{resource_type}.{resource_name}",
+                                    "line": resource_config.get("__line__", 1),
+                                }
+                            )
+
+        return violations
+
+    def _check_iam_wildcard_policy(self, content: Dict[str, Any]) -> List[Dict[str, Any]]:
+        """Check for IAM policies with wildcard actions"""
+        violations = []
+
+        if "resource" in content:
+            for resource_type, resources in content["resource"].items():
+                if resource_type in ["aws_iam_policy", "aws_iam_role_policy"]:
+                    for resource_name, resource_config in resources.items():
+                        policy = resource_config.get("policy", "")
+                        if isinstance(policy, str) and '"*"' in policy:
+                            violations.append(
+                                {
+                                    "message": f"IAM policy {resource_name} contains wildcard actions",
+                                    "resource": f"{resource_type}.{resource_name}",
+                                    "line": resource_config.get("__line__", 1),
+                                }
+                            )
+
+        return violations
+
+    def _is_s3_bucket_public(self, config: Dict[str, Any]) -> bool:
+        """Check if S3 bucket configuration allows public access"""
+        # Check various ways a bucket can be made public
+        acl = config.get("acl", "")
+        if acl in ["public-read", "public-read-write"]:
+            return True
+
+        # Check for public access block settings
+        public_access_block = config.get("public_access_block", {})
+        if public_access_block:
+            block_public_acls = public_access_block.get("block_public_acls", True)
+            block_public_policy = public_access_block.get("block_public_policy", True)
+            ignore_public_acls = public_access_block.get("ignore_public_acls", True)
+            restrict_public_buckets = public_access_block.get(
+                "restrict_public_buckets", True
+            )
+
+            if not (
+                block_public_acls
+                and block_public_policy
+                and ignore_public_acls
+                and restrict_public_buckets
+            ):
+                return True
+
+        return False
