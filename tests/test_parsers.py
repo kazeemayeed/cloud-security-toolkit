@@ -19,12 +19,12 @@ class TestTerraformParser:
 
     def test_parse_hcl_format(self, parser):
         """Test parsing HCL format Terraform"""
-        hcl_content = '''
+        hcl_content = """
         resource "aws_s3_bucket" "example" {
           bucket = "my-test-bucket"
           acl    = "private"
         }
-        '''
+        """
 
         with tempfile.NamedTemporaryFile(mode="w", suffix=".tf", delete=False) as f:
             f.write(hcl_content)
@@ -140,7 +140,10 @@ class TestARMParser:
     def test_parse_arm_template(self, parser):
         """Test parsing ARM template"""
         template = {
-            "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+            "$schema": (
+                "https://schema.management.azure.com/schemas/2019-04-01/"
+                "deploymentTemplate.json#"
+            ),
             "contentVersion": "1.0.0.0",
             "resources": [
                 {
