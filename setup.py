@@ -6,12 +6,12 @@ with open("README.md", "r", encoding="utf-8") as fh:
 setup(
     name="cloud-security-toolkit",
     version="1.0.0",
-    author="Your Name",
-    author_email="your.email@example.com",
+    author="Kazeem M",
+    author_email="kazeemayeed@gmail.com",
     description="Cloud Infrastructure Security Hardening as Code Toolkit",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/yourusername/cloud-security-toolkit",
+    url="https://github.com/kazeemayeed/cloud-security-toolkit",
     packages=find_packages(where="src"),
     package_dir={"": "src"},
     classifiers=[
@@ -48,7 +48,7 @@ setup(
     },
     entry_points={
         "console_scripts": [
-            "cloud-security-toolkit=src.main:cli",
+            "cloud-security-toolkit=main:cli",
         ],
     },
 )
