@@ -1,39 +1,47 @@
-name: Docker Image CI & Publish
+name: Docker CI & Publish
 
 on:
   push:
     branches:
-      - main
+      - main        # CI builds on main branch
     tags:
-      - 'v*'
-  workflow_dispatch:
+      - 'v*'        # Release builds for versioned tags
+  workflow_dispatch:  # Optional manual trigger
 
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      # 1. Checkout repo
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
+      # 2. Set up Docker Buildx
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
 
+      # 3. Log in to Docker Hub
       - name: Log in to Docker Hub
         uses: docker/login-action@v2
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Determine Docker tags
-        id: set-tags
+      # 4. Determine tags
+      - name: Set Docker tags
+        id: tags
         run: |
           IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/cloud-security-toolkit
           if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
+            # Tag push: push both version tag and latest
             echo "TAGS=${IMAGE}:${GITHUB_REF_NAME},${IMAGE}:latest" >> $GITHUB_ENV
           else
+            # Branch push: only latest
             echo "TAGS=${IMAGE}:latest" >> $GITHUB_ENV
           fi
 
+      # 5. Build and push Docker image
       - name: Build and push Docker image
         uses: docker/build-push-action@v4
         with:
@@ -41,44 +49,3 @@ jobs:
           file: ./Dockerfile
           push: true
           tags: ${{ env.TAGS }}
-
-
-###name: Docker Image CI
-
-###on:
- ### push:
-  ###  branches: [ "main" ]
- ### pull_request:
-  ###  branches: [ "main" ]
- ### workflow_dispatch: # optional: manual trigger
-
-####jobs:
-
-  ###build-and-push:
-    ###runs-on: ubuntu-latest
-
-    ###steps:
-      # Checkout the repo
-     #### - uses: actions/checkout@v4
-
-      # Set up Docker Buildx (needed for pushing)
-     #### - name: Set up Docker Buildx
-       ##### uses: docker/setup-buildx-action@v2
-
-      # Log in to Docker Hub
-    ####  - name: Log in to Docker Hub
-       #### uses: docker/login-action@v2
-       #### with:
-          #####username: ${{ secrets.DOCKERHUB_USERNAME }}
-          ####password: ${{ secrets.DOCKERHUB_TOKEN }}
-
-      # Build and push Docker image
-      ####- name: Build and push Docker image
-        ####uses: docker/build-push-action@v4
-        ####with:
-          ####context: .
-          ####file: ./Dockerfile
-          ###push: true
-          ###tags: |
-            ####${{ secrets.DOCKERHUB_USERNAME }}/cloud-security-toolkit:latest
-            ####${{ secrets.DOCKERHUB_USERNAME }}/cloud-security-toolkit:${{ github.sha }}
