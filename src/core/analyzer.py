@@ -2,20 +2,20 @@
 Core security analyzer module
 """
 
-import json
 import os
-from datetime import datetime
+import json
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Dict, List, Any, Optional
+from datetime import datetime
 
-from ..parsers.arm import ARMParser
-from ..parsers.cloudformation import CloudFormationParser
-from ..parsers.terraform import TerraformParser
-from ..rules.aws_rules import AWSRules
-from ..rules.azure_rules import AzureRules
-from ..rules.gcp_rules import GCPRules
-from .remediation import RemediationEngine
-from .rule_engine import RuleEngine
+from parsers.terraform import TerraformParser
+from parsers.cloudformation import CloudFormationParser
+from parsers.arm import ARMParser
+from rules.aws_rules import AWSRules
+from rules.azure_rules import AzureRules
+from rules.gcp_rules import GCPRules
+from core.rule_engine import RuleEngine
+from core.remediation import RemediationEngine
 
 
 class SecurityAnalyzer:
@@ -98,9 +98,7 @@ class SecurityAnalyzer:
             parsed_content = parser.parse(file_path)
 
             # Get applicable rules based on cloud provider
-            applicable_rules = self._get_applicable_rules(
-                cloud_provider, parsed_content
-            )
+            applicable_rules = self._get_applicable_rules(cloud_provider, parsed_content)
 
             # Run rules against parsed content
             for rule in applicable_rules:
