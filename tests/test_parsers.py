@@ -2,14 +2,14 @@
 Tests for configuration parsers
 """
 
-import json
+import pytest
 import tempfile
+import json
 from pathlib import Path
 
-import pytest
-from src.parsers.arm import ARMParser
-from src.parsers.cloudformation import CloudFormationParser
 from src.parsers.terraform import TerraformParser
+from src.parsers.cloudformation import CloudFormationParser
+from src.parsers.arm import ARMParser
 
 
 class TestTerraformParser:
@@ -19,12 +19,12 @@ class TestTerraformParser:
 
     def test_parse_hcl_format(self, parser):
         """Test parsing HCL format Terraform"""
-        hcl_content = """
+        hcl_content = '''
         resource "aws_s3_bucket" "example" {
           bucket = "my-test-bucket"
           acl    = "private"
         }
-        """
+        '''
 
         with tempfile.NamedTemporaryFile(mode="w", suffix=".tf", delete=False) as f:
             f.write(hcl_content)
@@ -32,16 +32,15 @@ class TestTerraformParser:
 
         try:
             result = parser.parse(temp_path)
-            # The HCL parser returns a list with the resource structure
-            assert "resource" in result or len(result) > 0
-            if isinstance(result, list) and len(result) > 0:
-                # Handle list format from HCL parser
-                resource_dict = result[0] if result else {}
-                assert "aws_s3_bucket" in resource_dict
-            else:
-                # Handle dict format
-                assert "resource" in result
-                assert "aws_s3_bucket" in result["resource"]
+            # The HCL parser returns a list containing a dictionary
+            assert isinstance(result, list), f"Expected list, got {type(result)}"
+            assert len(result) > 0, "Expected non-empty list"
+            
+            # Get the first dictionary from the list
+            resource_dict = result[0]
+            assert isinstance(resource_dict, dict), f"Expected dict in list, got {type(resource_dict)}"
+            assert "aws_s3_bucket" in resource_dict, f"Expected 'aws_s3_bucket' in {resource_dict.keys()}"
+            
         finally:
             temp_path.unlink()
 
@@ -70,7 +69,9 @@ class TestTerraformParser:
     def test_get_resources(self, parser):
         """Test extracting resources from parsed content"""
         content = {
-            "resource": {"aws_s3_bucket": {"test": {"bucket": "test-bucket"}}},
+            "resource": {
+                "aws_s3_bucket": {"test": {"bucket": "test-bucket"}}
+            },
             "variable": {"name": {"type": "string"}},
         }
 
