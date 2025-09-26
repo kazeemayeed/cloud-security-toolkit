@@ -1,10 +1,12 @@
-.PHONY: help install test lint format clean build docker-build docker-run
+## **Makefile** (update with conditional publishing)
+```makefile
+.PHONY: help install test lint format clean build docker-build docker-run publish-test-check
 
 help: ## Show this help message
 	@echo 'Usage: make [target]'
 	@echo ''
 	@echo 'Targets:'
-	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## / {printf "  %-15s %s\n", $1, $2}' $(MAKEFILE_LIST)
+	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## / {printf "  %-15s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
 
 install: ## Install dependencies
 	pip install -r requirements.txt
@@ -38,7 +40,20 @@ clean: ## Clean build artifacts
 	find . -type f -name "*.pyc" -delete
 
 build: clean ## Build package
-	python setup.py sdist bdist_wheel
+	python -m build
+
+check-package: build ## Check package for issues
+	twine check dist/*
+
+publish-test-check: check-package ## Check if we can publish to test PyPI
+	@echo "Checking Test PyPI upload (dry run)..."
+	@if [ -z "$$TEST_PYPI_API_TOKEN" ]; then \
+		echo "❌ TEST_PYPI_API_TOKEN not set. Skipping upload check."; \
+		echo "Set TEST_PYPI_API_TOKEN environment variable to test upload."; \
+	else \
+		echo "✅ TEST_PYPI_API_TOKEN is set. Ready for upload."; \
+		TWINE_USERNAME=__token__ TWINE_PASSWORD=$$TEST_PYPI_API_TOKEN twine upload --repository testpypi dist/* --verbose; \
+	fi
 
 docker-build: ## Build Docker image
 	docker build -t cloud-security-toolkit:latest .
@@ -49,12 +64,6 @@ docker-run: ## Run Docker container
 docker-dev: ## Run development container
 	docker-compose run --rm dev
 
-publish-test: build ## Publish to test PyPI
-	twine upload --repository testpypi dist/*
-
-publish: build ## Publish to PyPI
-	twine upload dist/*
-
 example-terraform: ## Run example on Terraform files
 	cloud-security-toolkit analyze --path examples/terraform --format terraform --output reports/terraform-report.json
 
@@ -64,4 +73,4 @@ example-cloudformation: ## Run example on CloudFormation files
 example-arm: ## Run example on ARM templates
 	cloud-security-toolkit analyze --path examples/arm --format arm --output reports/arm-report.json
 
-ci: install-dev lint test ## Run CI pipeline locally
+ci: install-dev lint test check-package ## Run CI pipeline locally
